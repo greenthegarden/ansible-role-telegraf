@@ -1,0 +1,19 @@
+---
+# defaults file for ansible-role-telegraf
+
+# For details see https://hub.docker.com/_/telegraf
+
+telegraf_image_name: telegraf
+telegraf_image_tag: 1.13
+
+telegraf_volume_name: telegraf
+
+telegraf_service_name: telegraf
+telegraf_service_ports_statsd: 8086
+telegraf_service_ports_udp: 8092
+telegraf_service_ports_tcp: 8094
+telegraf_service_ports: [
+  { label: statd, value: "{{ telegraf_service_ports_statsd }}" },
+  { label: udp, value: "{{ telegraf_service_ports_udp }}" },
+  { label: tcp, value: "{{ telegraf_service_ports_tcp }}" },
+]

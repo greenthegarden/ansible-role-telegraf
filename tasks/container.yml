@@ -1,0 +1,35 @@
+---
+
+- name: "Create {{ telegraf_volume_name }} docker volume"
+  docker_volume:
+    name: "{{ telegraf_volume_name }}"
+
+- name: "deregister {{ telegraf_service_name }} service with the local consul agent"
+  consul:
+    service_name: "{{ telegraf_service_name }}-{{ item.value }}"
+    service_port: "{{ item.value }}"
+    state: absent
+  with_dict: "{{ telegraf_service_ports }}"
+  when: service_consul_running
+
+# docker run --rm -ti --name emqx -p 18083:18083 -p 1883:1883 emqx:latest
+- name: "Run image {{ telegraf_image_name }}:{{ telegraf_image_tag }} as service {{ telegraf_service_name }}"
+  docker_container:
+    name: "{{ telegraf_service_name }}"
+    image: "{{ telegraf_image_name }}:{{ telegraf_image_tag }}"
+    published_ports:
+      - "{{ telegraf_service_ports_http }}:8086"
+    volumes:
+      - "{{ telegraf_volume_name }}:/var/lib/telegraf"
+    recreate: yes
+    restart_policy: "{{ telegraf_service_restart_policy }}"
+    state: started
+  register: telegraf_service_launched
+
+- name: "register {{ telegraf_service_name }} service with the local consul agent"
+  consul:
+    service_name: "{{ telegraf_service_name}}-{{ item.value }}"
+    service_port: "{{ item.value }}"
+    state: present
+  with_dict: "{{ telegraf_service_ports }}"
+  when: service_consul_running
