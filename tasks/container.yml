@@ -1,35 +1,34 @@
 ---
 
-- name: "Create {{ telegraf_volume_name }} docker volume"
-  docker_volume:
-    name: "{{ telegraf_volume_name }}"
-
-- name: "deregister {{ telegraf_service_name }} service with the local consul agent"
+- name: "Unregister {{ telegraf_service_name }} service with the local consul agent"
   consul:
+    host: "{{ consul_client_address }}" 
     service_name: "{{ telegraf_service_name }}-{{ item.value }}"
-    service_port: "{{ item.value }}"
+    # service_port: "{{ item.value | int }}"
     state: absent
-  with_dict: "{{ telegraf_service_ports }}"
+  loop: "{{ telegraf_service_ports }}"
   when: service_consul_running
 
-# docker run --rm -ti --name emqx -p 18083:18083 -p 1883:1883 emqx:latest
 - name: "Run image {{ telegraf_image_name }}:{{ telegraf_image_tag }} as service {{ telegraf_service_name }}"
   docker_container:
     name: "{{ telegraf_service_name }}"
     image: "{{ telegraf_image_name }}:{{ telegraf_image_tag }}"
     published_ports:
-      - "{{ telegraf_service_ports_http }}:8086"
-    volumes:
-      - "{{ telegraf_volume_name }}:/var/lib/telegraf"
-    recreate: yes
-    restart_policy: "{{ telegraf_service_restart_policy }}"
-    state: started
+      - "{{ telegraf_service_ports_statsd }}:8086"
+      - "{{ telegraf_service_ports_udp }}:8092"
+      - "{{ telegraf_service_ports_tcp }}:8094"
+    # recreate: yes
+    restart_policy: always
+    state: started    # volumes:
+    #   - "{{ telegraf_volume_name }}:/var/lib/telegraf"
   register: telegraf_service_launched
 
-- name: "register {{ telegraf_service_name }} service with the local consul agent"
+- name: "Register {{ telegraf_service_name }} service with the local consul agent"
   consul:
+    host: "{{ consul_client_address }}"
     service_name: "{{ telegraf_service_name}}-{{ item.value }}"
-    service_port: "{{ item.value }}"
+    service_port: "{{ item.value | int }}"
+    service_address: "{{ ansible_host }}"
     state: present
-  with_dict: "{{ telegraf_service_ports }}"
+  loop: "{{ telegraf_service_ports }}"
   when: service_consul_running
