@@ -6,7 +6,7 @@
 telegraf_image_name: telegraf
 telegraf_image_tag: 1.13
 
-telegraf_volume_name: telegraf
+telegraf_config_file: "{{ ansible_user_dir }}/telegraf/telegraf.conf"
 
 telegraf_service_name: telegraf
 telegraf_service_ports_statsd: 8086

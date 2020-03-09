@@ -4,7 +4,6 @@
   consul:
     host: "{{ consul_client_address }}" 
     service_name: "{{ telegraf_service_name }}-{{ item.value }}"
-    # service_port: "{{ item.value | int }}"
     state: absent
   loop: "{{ telegraf_service_ports }}"
   when: service_consul_running
@@ -14,13 +13,14 @@
     name: "{{ telegraf_service_name }}"
     image: "{{ telegraf_image_name }}:{{ telegraf_image_tag }}"
     published_ports:
-      - "{{ telegraf_service_ports_statsd }}:8086"
-      - "{{ telegraf_service_ports_udp }}:8092"
-      - "{{ telegraf_service_ports_tcp }}:8094"
-    # recreate: yes
-    restart_policy: always
-    state: started    # volumes:
-    #   - "{{ telegraf_volume_name }}:/var/lib/telegraf"
+      - "{{ telegraf_service_ports_statsd | default(8086, true) }}:8086"
+      - "{{ telegraf_service_ports_udp | default(8092, true) }}:8092"
+      - "{{ telegraf_service_ports_tcp | default(8094, true) }}:8094"
+    recreate: "{{ service_recreate | default(yes, true) }}"
+    restart_policy: "{{ service_restart_policy | default(always, true) }}"
+    state: started
+    volumes:
+      - "{{ telegraf_config_file }}:/etc/telegraf/telegraf.conf:ro"
   register: telegraf_service_launched
 
 - name: "Register {{ telegraf_service_name }} service with the local consul agent"
